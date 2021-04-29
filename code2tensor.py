@@ -66,5 +66,5 @@ def seq2seq_getTensor(code_tensor,sbt_tensor,nl_tensor):
 def seq2seq_getTestTensor(code_tensor,sbt_tensor):
     return code_tensor[:20000],sbt_tensor[:20000]
 
-def tranformer_getTestTensor(code_tensor):
+def getTestCodeTensor(code_tensor):
     return code_tensor[:20000]

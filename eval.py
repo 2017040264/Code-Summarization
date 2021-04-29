@@ -194,6 +194,9 @@ def sentenceBleu(model):
     elif model=='seq2trans':
         with open("ensemble/result.txt", 'r') as re:
             results = re.readlines()
+    elif model=='seq2seq_onlycode':
+        with open("seq2seq_onlycode/result.txt", 'r') as re:
+            results = re.readlines()
     else:
         print('model参数不对，请修改( seq2seq 或者 tranformer )')
 

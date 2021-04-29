@@ -7,7 +7,7 @@ My graduation task.The goal is : Give you code,give me comments.
 https://github.com/xing-hu/EMSE-DeepCom
 该链接指向的是清华大学学者的github项目地址。可在他们项目中获取数据集(他们将数据集放到了谷歌云盘里面，给出了链接)。
 
-也可以访问AI Studio 上面我建立的数据集：
+也可以访问AI Studio 上面我建立的数据集：https://aistudio.baidu.com/aistudio/datasetdetail/73043
 
 ## seq2seq
 该文件夹存放使用训练好的seq2seq模型得到的测试结果
@@ -39,6 +39,9 @@ code: public synchronized void info ( string msg ) { log record record = new log
 
 ## seq2seq.py
 搭建seq2seq模型。因为保存模型使用的是checkpoints，所以需要原始的网络模型进行复原
+
+##seq2seq_onlycode.py
+搭建不适用AST的seq2seq模型。
 
 ## transformer.py
 搭建transformer模型。

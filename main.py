@@ -9,10 +9,11 @@ import matplotlib.pyplot as plt
 
 os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
 
-from code2tensor import creat_dataset,tokenize,seq2seq_getTestTensor,tranformer_getTestTensor
+from code2tensor import creat_dataset,tokenize,seq2seq_getTestTensor,getTestCodeTensor
 from seq2seq import Encoder,Decoder
-from eval import seq2seq_result,sentenceBleu,transformer_result,seq2trans_result
 from transformer import Transformer,CustomSchedule
+from seq2seq_onlycode import sDecoder,sEncoder,seq2seq_onlycode_translate
+from eval import seq2seq_result,sentenceBleu,transformer_result,seq2trans_result
 
 # seq2seq模型恢复并测试
 def seq2seq_infer(vocab_maxlen,sbt_lang,nl_lang,nl_maxlen,code_tensor, sbt_tensor):
@@ -37,10 +38,22 @@ def seq2seq_infer(vocab_maxlen,sbt_lang,nl_lang,nl_maxlen,code_tensor, sbt_tenso
                    train_sbt_encoder, decoder)
 
 
-# # seq2seq结果的sentence bleu评分
-# def seq2seq_bleu():
-#     seq2seq_ava_score = sentenceBleu(model='seq2seq')
-#     print(seq2seq_ava_score)
+def seq2seq_onlycode_infer(vocab_maxlen,nl_lang,nl_maxlen,code_tensor):
+    batch_size = 128
+    units = 256
+    embedding_dim = 256
+
+    train_code_encoder = sEncoder(vocab_maxlen + 1, embedding_dim, units, batch_size)
+    decoder = sDecoder(vocab_maxlen + 1, embedding_dim, units, batch_size)
+    # 从checkpoint文件中恢复网络
+    checkpoint = tf.train.Checkpoint(train_code_encoder=train_code_encoder,decoder=decoder)
+    checkpoint.restore(tf.train.latest_checkpoint('seq2seq_onlycode/checkpoints'))
+
+    seq2seq_path = 'seq2seq_onlycode/result.txt'
+    test_code_tensor = getTestCodeTensor(code_tensor)
+    # seq2seq_onlycode_translate(test_code_tensor, seq2seq_path, units, nl_lang, nl_maxlen, train_code_encoder, decoder, num=100)
+
+    seq2seq_onlycode_translate(test_code_tensor,seq2seq_path,units,nl_lang,nl_maxlen,train_code_encoder,decoder,num=None)
 
 
 # tranformer模型恢复并测试
@@ -67,15 +80,9 @@ def transformer_infer(vocab_maxlen,code_tensor,nl_lang,nl_maxlen):
     checkpoint = tf.train.Checkpoint(transformer=transformer,optimizer=optimizer)
     checkpoint.restore(tf.train.latest_checkpoint('transformer/checkpoints/train'))
 
-    test_code_tensor = tranformer_getTestTensor(code_tensor)
+    test_code_tensor = getTestCodeTensor(code_tensor)
     transformer_result_path='transformer/result.txt'
     transformer_result(test_code_tensor,transformer_result_path,nl_lang,nl_maxlen,transformer)
-
-
-# # tranformer结果的sentence blue评分
-# def transformer_bleu():
-#     seq2seq_ava_score = sentenceBleu(model='transformer')
-#     print(seq2seq_ava_score)
 
 
 # start seq2seq与transformer的集成
@@ -167,8 +174,11 @@ def main():
     # seq2seq_infer(vocab_maxlen,  sbt_lang, nl_lang, nl_maxlen, code_tensor, sbt_tensor)
     # result_bleu(model='seq2seq')
 
-    transformer_infer(vocab_maxlen, code_tensor, nl_lang, nl_maxlen)
-    result_bleu(model='transformer')
+    # transformer_infer(vocab_maxlen, code_tensor, nl_lang, nl_maxlen)
+    # result_bleu(model='transformer')
+
+    seq2seq_onlycode_infer(vocab_maxlen, nl_lang, nl_maxlen, code_tensor)
+    result_bleu(model='seq2seq_onlycode')
 
     # seq2trans(vocab_maxlen, sbt_lang, nl_lang, nl_maxlen, code_tensor, sbt_tensor)
     # result_bleu(model='seq2trans')
@@ -177,12 +187,15 @@ def main():
 if __name__ == '__main__':
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
     main()
-    # pred_id=4
-    # predicted_id = tf.cast(pred_id, tf.int32)
-    # print(predicted_id)
-    # predicted_id = tf.expand_dims(predicted_id, axis=0)
-    # predicted_id = tf.expand_dims(predicted_id, axis=0)
-    # print(predicted_id)
 
+
+    # 权重计算
+    # seq=result_bleu(model='seq2seq')
+    # trans=result_bleu(model='transformer')
+    #
+    # seq_=seq/(seq+trans)
+    # trans_=trans/(seq+trans)
+    # print(seq_)
+    # print(trans_)
 
 
