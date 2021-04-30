@@ -175,6 +175,86 @@ def seq2trans_result(code, sbt,path,units,nl_lang,nl_maxlen,train_code_encoder,t
             targ.write(can+'\n')
 # end seq2trans集成
 
+# start seqonlycode2trans集成
+a=0.5920943071978862
+b=0.40790569280211364
+
+def seqonlycode2trans_evaluate(code,units,nl_lang,nl_maxlen,train_code_encoder,decoder,transformer):
+    code = tf.expand_dims(code, axis=0)
+
+    # print(code.shape)
+    result = ''
+
+    # hidden是一维的，输入只有一个
+    hidden = [tf.zeros((1, units))]
+    # code:(1,500) hidden(1,2)
+    # out:(1,500,2)
+    code_encoding_out, code_encoding_hidden = train_code_encoder(code, hidden)
+
+
+    decoding_hidden = code_encoding_hidden
+
+    # decoder input shape=(1,1)
+    decoding_input = tf.expand_dims([nl_lang.word_index['<start>']], 0)
+    # transformer 的输入
+    output=decoding_input
+
+    for t in range(nl_maxlen):
+
+        pred, decoding_hidden= decoder(decoding_input, decoding_hidden, code_encoding_out)
+        # 取预测结果中概率最大的值
+        seq2seq_max=tf.reduce_max(pred,axis=-1).numpy()[0]
+
+
+        enc_padding_mask, combined_mask, dec_padding_mask = create_masks(code, output)
+        # predictions.shape == (batch_size, seq_len, vocab_size)
+        predictions = transformer(code, output, False, enc_padding_mask, combined_mask, dec_padding_mask)
+        transformer_max=tf.reduce_max(predictions,axis=-1).numpy()[0][0]
+
+        # seq2seq模型得到的预测概率大
+        if a*seq2seq_max>=b*transformer_max:
+        #if seq2seq_max >= transformer_max:
+            pred_id = tf.argmax(pred[0]).numpy()
+        else:
+            # 从 seq_len 维度选择最后一个词
+            predictions = predictions[:, -1:, :]  # (batch_size, 1, vocab_size)
+            pred_id = tf.argmax(predictions, axis=-1)
+            #predicted_id = tf.cast(pred_id, tf.int32)
+            #print('predicted_id:',predicted_id)
+            pred_id = pred_id.numpy()[0][0]
+
+
+        if nl_lang.index_word[pred_id] == '<end>':
+            return result
+
+        result += nl_lang.index_word[pred_id] + ' '
+
+        # fed back
+        decoding_input = tf.expand_dims([pred_id], 0)
+
+        # 连接 predicted_id 与输出，作为解码器的输入传递到解码器。
+        predicted_id = tf.cast(pred_id, tf.int32)
+        predicted_id=tf.expand_dims(predicted_id,axis=0)
+        predicted_id = tf.expand_dims(predicted_id, axis=0)
+        output = tf.concat([output, predicted_id], axis=-1)
+
+    return  result
+
+def seqonlycode2trans_result(code,path,units,nl_lang,nl_maxlen,train_code_encoder,decoder,transformer,num=None):
+    if num==None:
+        num=len(code)
+    print('num= ', num)
+    with open(path,'w+') as targ:
+        #for i in tqdm(range(len(code_tensor))):
+        for i in tqdm(range(num)):
+            #print(c[i])
+            #print(s[i])
+            can=seqonlycode2trans_evaluate(code[i],units,nl_lang,nl_maxlen,train_code_encoder,decoder,transformer)
+            #print(can)
+            targ.write(can+'\n')
+
+# end seqonlycode2trans集成
+
 # bleu评分
 def sentenceBleu(model):
     # 使用test数据集计算sentence_BLEU
@@ -196,6 +276,9 @@ def sentenceBleu(model):
             results = re.readlines()
     elif model=='seq2seq_onlycode':
         with open("seq2seq_onlycode/result.txt", 'r') as re:
+            results = re.readlines()
+    elif model=='seqonlycode2trans':
+        with open('ensemble/sct_result.txt', 'r') as re:
             results = re.readlines()
     else:
         print('model参数不对，请修改( seq2seq 或者 tranformer )')

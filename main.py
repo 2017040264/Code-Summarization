@@ -13,7 +13,7 @@ from code2tensor import creat_dataset,tokenize,seq2seq_getTestTensor,getTestCode
 from seq2seq import Encoder,Decoder
 from transformer import Transformer,CustomSchedule
 from seq2seq_onlycode import sDecoder,sEncoder,seq2seq_onlycode_translate
-from eval import seq2seq_result,sentenceBleu,transformer_result,seq2trans_result
+from eval import seq2seq_result,sentenceBleu,transformer_result,seq2trans_result,seqonlycode2trans_result
 
 # seq2seq模型恢复并测试
 def seq2seq_infer(vocab_maxlen,sbt_lang,nl_lang,nl_maxlen,code_tensor, sbt_tensor):
@@ -139,6 +139,34 @@ def seq2trans(vocab_maxlen,sbt_lang,nl_lang,nl_maxlen,code_tensor, sbt_tensor):
 # end seq2seq与transformer的集成
 
 
+# start seq2seq_onlycode与transformer的集成
+def seq2seq_onlycode_layer(vocab_maxlen):
+    batch_size = 128
+    units = 256
+    embedding_dim = 256
+
+    train_code_encoder = sEncoder(vocab_maxlen + 1, embedding_dim, units, batch_size)
+    decoder = sDecoder(vocab_maxlen + 1, embedding_dim, units, batch_size)
+
+    # 从checkpoint文件中恢复网络
+    checkpoint = tf.train.Checkpoint(train_code_encoder=train_code_encoder, decoder=decoder)
+
+    checkpoint.restore(tf.train.latest_checkpoint('seq2seq_onlycode/checkpoints'))
+    return train_code_encoder, decoder
+
+def seqonlycode2trans(vocab_maxlen,nl_lang,nl_maxlen,code_tensor):
+    train_code_encoder, decoder = seq2seq_onlycode_layer(vocab_maxlen)
+    transformer = tranformer_layer(vocab_maxlen)
+    units = 256
+    path = 'ensemble/sct_result.txt'
+    test_code_tensor= getTestCodeTensor(code_tensor)
+    seqonlycode2trans_result(test_code_tensor, path, units, nl_lang, nl_maxlen, train_code_encoder,
+                      decoder, transformer, num=100)
+
+
+# end seq2seq_onlycode与transformer的集成
+
+
 #BLEU 评分 model=['seq2seq','transformer','seq2trans']
 def result_bleu(model):
     seq2seq_ava_score = sentenceBleu(model)
@@ -177,11 +205,16 @@ def main():
     # transformer_infer(vocab_maxlen, code_tensor, nl_lang, nl_maxlen)
     # result_bleu(model='transformer')
 
-    seq2seq_onlycode_infer(vocab_maxlen, nl_lang, nl_maxlen, code_tensor)
-    result_bleu(model='seq2seq_onlycode')
+    # seq2seq_onlycode_infer(vocab_maxlen, nl_lang, nl_maxlen, code_tensor)
+    # result_bleu(model='seq2seq_onlycode')
 
     # seq2trans(vocab_maxlen, sbt_lang, nl_lang, nl_maxlen, code_tensor, sbt_tensor)
     # result_bleu(model='seq2trans')
+
+    seqonlycode2trans(vocab_maxlen, nl_lang, nl_maxlen, code_tensor)
+    result_bleu(model='seqonlycode2trans')
+    # 无权重：0.563853652334339
+    # 带权重：0.5721481119418715
 
 
 if __name__ == '__main__':
@@ -189,13 +222,15 @@ if __name__ == '__main__':
     main()
 
 
-    # 权重计算
-    # seq=result_bleu(model='seq2seq')
-    # trans=result_bleu(model='transformer')
-    #
-    # seq_=seq/(seq+trans)
-    # trans_=trans/(seq+trans)
-    # print(seq_)
-    # print(trans_)
+   # 权重计算
+   # seq=result_bleu(model='seq2seq')
+   #  seq=sentenceBleu(model='seq2seq_onlycode')
+   #  trans=sentenceBleu(model='transformer')
+   #
+   #  seq_=seq/(seq+trans)
+   #  trans_=trans/(seq+trans)
+   #  print(seq_)  #0.5920943071978862
+
+   #  print(trans_) #0.40790569280211364
 
 
