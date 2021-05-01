@@ -21,7 +21,7 @@ checkpoints获取路径：https://www.kaggle.com/chenfanliang/seq2seq-onlywith-c
 该问价夹存放使用训练好的transformer模型得到的预测结果
 checkpoints获取路径：https://www.kaggle.com/chenfanliang/transfor
 
-## ensembel
+## ensembel(经过测试，这种思路并未得到一个优于两个模型的结果，均介于二者之间)
 该文件夹存放了seq2trans模型的预测结果。所谓的seq2trans模型，就是seq2seq+transformer模型的合体，在预测的时候，
 二者同时预测，取概率最大的的结果。
 
