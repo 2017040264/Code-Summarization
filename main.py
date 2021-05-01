@@ -161,7 +161,7 @@ def seqonlycode2trans(vocab_maxlen,nl_lang,nl_maxlen,code_tensor):
     path = 'ensemble/sct_result.txt'
     test_code_tensor= getTestCodeTensor(code_tensor)
     seqonlycode2trans_result(test_code_tensor, path, units, nl_lang, nl_maxlen, train_code_encoder,
-                      decoder, transformer, num=100)
+                      decoder, transformer, num=None)
 
 
 # end seq2seq_onlycode与transformer的集成
@@ -211,20 +211,21 @@ def main():
     # seq2trans(vocab_maxlen, sbt_lang, nl_lang, nl_maxlen, code_tensor, sbt_tensor)
     # result_bleu(model='seq2trans')
 
-    seqonlycode2trans(vocab_maxlen, nl_lang, nl_maxlen, code_tensor)
-    result_bleu(model='seqonlycode2trans')
+    # seqonlycode2trans(vocab_maxlen, nl_lang, nl_maxlen, code_tensor)
+    # result_bleu(model='seqonlycode2trans')
     # 无权重：0.563853652334339
-    # 带权重：0.5721481119418715
+    # 带权重：100:0.5721481119418715  20000:0.6027096657625092
 
 
 if __name__ == '__main__':
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-    main()
+    #main()
 
 
    # 权重计算
    # seq=result_bleu(model='seq2seq')
    #  seq=sentenceBleu(model='seq2seq_onlycode')
+   #  print(seq)
    #  trans=sentenceBleu(model='transformer')
    #
    #  seq_=seq/(seq+trans)
